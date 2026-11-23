@@ -1,4 +1,4 @@
-export const BASE_URL = 'https://chat.kus.ai';
+export const BASE_URL = 'https://api.kus.ai';
 
 export async function* readEvents(stream) {
   const reader = stream.getReader();

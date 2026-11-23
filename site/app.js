@@ -1,4 +1,4 @@
-import { BASE_URL, complete } from './api.js';
+import { BASE_URL, complete } from './api.js?v=api-domain-1';
 
 const $ = id => document.getElementById(id);
 const HISTORY_KEY = 'kus-chat-history-v1';

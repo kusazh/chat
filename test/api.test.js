@@ -26,7 +26,7 @@ test('public chat includes prior conversation and streaming without client crede
   const original = globalThis.fetch;
   const messages = [{ role: 'user', content: 'first' }, { role: 'assistant', content: 'answer' }, { role: 'user', content: 'second' }];
   globalThis.fetch = async (url, options) => {
-    assert.equal(url, 'https://chat.kus.ai/web/chat/completions');
+    assert.equal(url, 'https://api.kus.ai/web/chat/completions');
     assert.equal(options.headers.Authorization, undefined);
     assert.deepEqual(JSON.parse(options.body).messages, messages);
     assert.equal(JSON.parse(options.body).stream, true);
