@@ -22,25 +22,25 @@ test('disconnected streams fail instead of returning partial successful answers'
   await assert.rejects(async () => { for await (const event of readEvents(stream)) {} }, /连接意外结束/);
 });
 
-test('completion includes prior conversation, auth and streaming without exposing credentials in URL', async () => {
+test('public chat includes prior conversation and streaming without client credentials', async () => {
   const original = globalThis.fetch;
   const messages = [{ role: 'user', content: 'first' }, { role: 'assistant', content: 'answer' }, { role: 'user', content: 'second' }];
   globalThis.fetch = async (url, options) => {
-    assert.equal(url, 'https://chat.kus.ai/v1/chat/completions');
-    assert.equal(options.headers.Authorization, 'Bearer test-key');
+    assert.equal(url, 'https://chat.kus.ai/web/chat/completions');
+    assert.equal(options.headers.Authorization, undefined);
     assert.deepEqual(JSON.parse(options.body).messages, messages);
     assert.equal(JSON.parse(options.body).stream, true);
     return new Response('data: {"choices":[{"delta":{"content":"回复"}}]}\n\ndata: [DONE]\n\n');
   };
-  try { assert.equal(await complete(messages, 'test-key', new AbortController().signal, () => {}), '回复'); }
+  try { assert.equal(await complete(messages, new AbortController().signal, () => {}), '回复'); }
   finally { globalThis.fetch = original; }
 });
 
-test('invalid credentials produce actionable error and no retries', async () => {
+test('rate limits produce actionable error and no retries', async () => {
   const original = globalThis.fetch;
   let calls = 0;
-  globalThis.fetch = async () => { calls++; return new Response('{}', { status: 401 }); };
-  try { await assert.rejects(complete([{ role: 'user', content: 'hi' }], 'wrong', null, () => {}), /API Key 无效/); }
+  globalThis.fetch = async () => { calls++; return new Response('{}', { status: 429 }); };
+  try { await assert.rejects(complete([{ role: 'user', content: 'hi' }], null, () => {}), /稍后再试/); }
   finally { globalThis.fetch = original; }
   assert.equal(calls, 1);
 });

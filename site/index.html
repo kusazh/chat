@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#faf9f6">
-  <meta name="description" content="一个简单、专注的聊天空间。">
-  <title>Chat · kus.ai</title>
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="有什么可以帮忙的？">
+  <title>Chat</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
   <script type="module" src="./app.js"></script>
@@ -13,56 +13,38 @@
 <body>
   <div class="shade" id="shade" hidden></div>
   <aside class="sidebar" id="sidebar" aria-label="会话导航">
-    <a class="brand" href="./" aria-label="Chat 首页"><span class="brand-mark">✳</span><span>chat<span class="brand-dot">.</span></span></a>
-    <button class="new-chat" id="new-chat"><span>＋</span> 开启新对话 <kbd>⌘ K</kbd></button>
-    <p class="section-label">你的对话</p>
+    <div class="sidebar-header"><a class="brand" href="./" aria-label="Chat 首页"><svg viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="3" width="16" height="26" rx="8"/><rect x="8" y="3" width="16" height="26" rx="8" transform="rotate(60 16 16)"/><rect x="8" y="3" width="16" height="26" rx="8" transform="rotate(120 16 16)"/></g></svg></a><button class="icon-button" id="sidebar-close" aria-label="关闭侧栏">▥</button></div>
+    <button class="new-chat" id="new-chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5M15 3l6 6M9 15l1-5L19 1l4 4-9 9z"/></svg>新聊天 <kbd>⌘ K</kbd></button>
+    <button class="nav-search" id="search-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10.5" cy="10.5" r="7.5"/><path d="m16 16 5 5"/></svg>搜索聊天</button>
+    <label class="sr-only" for="search">搜索聊天记录</label><input type="search" id="search" placeholder="搜索聊天记录…" hidden>
+    <p class="section-label">聊天</p>
     <nav id="history" aria-label="历史对话"></nav>
-    <div class="sidebar-bottom">
-      <button id="settings-open" class="profile"><span class="avatar">K</span><span>我的空间<small>设置与连接</small></span><span class="gear">⚙</span></button>
-      <a href="https://kus.ai" class="home-link">kus.ai <span>↗</span></a>
-    </div>
+    <div class="sidebar-bottom"><button id="settings-open" class="profile"><span class="avatar">K</span><span>Kusa<small>个人账户</small></span><span class="gear">···</span></button></div>
   </aside>
-  <main>
+  <main class="empty" id="main">
     <header class="topbar">
       <button class="icon-button menu-button" id="menu" aria-label="打开会话导航" aria-expanded="false">☰</button>
-      <div class="model-label">Chat <span class="model-version">01</span><span class="chevron">⌄</span></div>
-      <div class="top-actions"><span class="connection" id="connection"><i></i>未连接</span><button class="icon-button" id="theme" aria-label="切换深色模式">◐</button></div>
+      <div class="model-label">ChatGPT <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
+      <div class="top-actions"><span class="connection" id="connection" hidden><i></i>未连接</span><button class="icon-button" id="theme" aria-label="切换深色模式">◐</button><button class="top-avatar" id="profile-open" aria-label="打开设置">K</button></div>
     </header>
     <div class="scroll-area" id="scroll-area">
-      <section class="welcome" id="welcome">
-        <div class="welcome-mark" aria-hidden="true">✳</div>
-        <p class="eyebrow">A LITTLE ROOM FOR BIG IDEAS</p>
-        <h1>今天，聊点什么？</h1>
-        <p class="welcome-subtitle">一个问题，一点灵感，或者随便聊聊。</p>
-        <div class="suggestions">
-          <button data-prompt="给我一个打破日常的小点子。"><span>✧</span><strong>找一点灵感</strong><small>让平常的一天不太一样</small><b>↗</b></button>
-          <button data-prompt="如果周末只做一件有趣的事，你会推荐什么？"><span>☀</span><strong>计划一个周末</strong><small>把时间留给有趣的事</small><b>↗</b></button>
-          <button data-prompt="问我一个有意思的问题吧。"><span>☏</span><strong>随便聊聊</strong><small>从一个好问题开始</small><b>↗</b></button>
-        </div>
-      </section>
+      <section class="welcome" id="welcome"><h1>有什么可以帮忙的？</h1></section>
       <div id="messages" class="messages" aria-live="polite" aria-relevant="additions"></div>
     </div>
     <div class="composer-area">
       <form id="composer" class="composer">
         <label class="sr-only" for="prompt">输入消息</label>
-        <textarea id="prompt" rows="1" placeholder="发送消息…" maxlength="30000"></textarea>
-        <div class="composer-tools"><span>↵ 发送 <span class="desktop-hint">· Shift + ↵ 换行</span></span><button class="send" id="send" type="submit" aria-label="发送消息" disabled>↑</button><button class="send stop" id="stop" type="button" aria-label="停止等待" hidden>■</button></div>
+        <textarea id="prompt" rows="1" placeholder="询问任何问题" maxlength="30000"></textarea>
+        <div class="composer-tools"><button class="composer-plus" id="new-inline" type="button" aria-label="开启新对话">＋</button><div class="composer-right"><span id="waiting-label" hidden>正在思考</span><button class="send" id="send" type="submit" aria-label="发送消息" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></button><button class="send stop" id="stop" type="button" aria-label="停止等待" hidden>■</button></div></div>
       </form>
-      <p class="footer-note">保持好奇，慢慢聊。<span class="footer-separator">·</span><button id="clear-chat">清空当前对话</button></p>
+      <p class="footer-note">ChatGPT 也可能会犯错。请核查重要信息。<button id="clear-chat" title="清空当前对话">清空对话</button></p>
     </div>
   </main>
   <dialog id="settings" aria-labelledby="settings-title">
-    <form id="settings-form">
-      <div class="dialog-heading"><h2 id="settings-title">连接设置</h2><button class="icon-button" id="settings-close" type="button" aria-label="关闭设置">×</button></div>
-      <p class="dialog-description">填入你的 API Key，就可以开始聊天。</p>
-      <label for="api-key">API Key</label>
-      <input id="api-key" type="password" placeholder="human_sk_…" autocomplete="off" spellcheck="false">
-      <label class="checkbox"><input type="checkbox" id="remember-key">在此浏览器记住密钥</label>
-      <p class="field-note">默认仅在当前标签页保存密钥。对话记录保存在此浏览器。</p>
-      <div class="endpoint"><span>接口地址</span><code>https://chat.kus.ai/v1</code></div>
-      <p id="settings-status" class="settings-status" role="status"></p>
-      <button class="save-settings" type="submit">保存并连接 <span>→</span></button>
-    </form>
+    <div class="dialog-heading"><h2 id="settings-title">设置</h2><button class="icon-button" id="settings-close" type="button" aria-label="关闭设置">×</button></div>
+    <div class="setting-row"><span>外观</span><button id="settings-theme" class="setting-button">切换浅色 / 深色</button></div>
+    <div class="setting-row"><span>聊天记录</span><small>仅保存在此浏览器</small></div>
+    <p class="field-note">Enter 发送消息，Shift + Enter 换行。<br>⌘ / Ctrl + K 开启新对话。</p>
   </dialog>
   <div id="toast" class="toast" role="status" hidden></div>
 </body>

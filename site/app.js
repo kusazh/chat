@@ -2,12 +2,16 @@ import { BASE_URL, complete } from './api.js';
 
 const $ = id => document.getElementById(id);
 const HISTORY_KEY = 'kus-chat-history-v1';
-const KEY_NAME = 'kus-chat-api-key';
 let chats = [];
 let currentId;
 let activeRequest = null;
 let storageWarning = false;
 let toastTimer;
+
+try {
+  localStorage.removeItem('kus-chat-api-key');
+  sessionStorage.removeItem('kus-chat-api-key');
+} catch { /* Public chat works without browser credential storage. */ }
 
 function storageGet(storage, key) {
   try { return storage.getItem(key); } catch { return null; }
@@ -27,10 +31,6 @@ function save() {
     if (!storageWarning) toast('浏览器无法保存记录；当前对话仍可继续使用。');
     storageWarning = true;
   }
-}
-
-function key() {
-  return storageGet(sessionStorage, KEY_NAME) || storageGet(localStorage, KEY_NAME) || '';
 }
 
 function current() { return chats.find(chat => chat.id === currentId); }
@@ -59,11 +59,14 @@ function newChat() {
 
 function history() {
   $('history').replaceChildren();
-  const visible = chats.filter(chat => chat.messages.length);
+  const query = $('search').value.trim().toLowerCase();
+  const visible = chats.filter(chat => chat.messages.length && (!query
+    || chat.title.toLowerCase().includes(query)
+    || chat.messages.some(message => message.content.toLowerCase().includes(query))));
   if (!visible.length) {
     const empty = document.createElement('p');
     empty.className = 'history-empty';
-    empty.textContent = '新的想法，就从这里开始。';
+    empty.textContent = query ? '没有找到相关聊天' : '暂无聊天记录';
     $('history').append(empty);
   }
   for (const chat of visible) {
@@ -133,6 +136,7 @@ function scrollDown() {
 function renderMessages() {
   const chat = current();
   $('welcome').hidden = chat.messages.length > 0;
+  $('main').classList.toggle('empty', chat.messages.length === 0);
   $('messages').replaceChildren();
   for (const [index, message] of chat.messages.entries()) {
     const article = document.createElement('article');
@@ -188,24 +192,20 @@ function render() {
   $('prompt').disabled = !!activeRequest;
   $('send').hidden = !!activeRequest;
   $('stop').hidden = !activeRequest;
+  $('waiting-label').hidden = !activeRequest;
   resize();
 }
 
 function openSettings() {
-  $('api-key').value = key();
-  $('remember-key').checked = !!storageGet(localStorage, KEY_NAME);
-  $('settings-status').textContent = '';
   $('settings').showModal();
 }
 
-async function checkConnection(apiKey, signal) {
-  const response = await fetch(`${BASE_URL}/models`, {
-    headers: { Authorization: `Bearer ${apiKey}` }, signal,
+async function checkConnection(signal) {
+  const response = await fetch(`${BASE_URL}/healthz`, {
+    signal,
     credentials: 'omit', referrerPolicy: 'no-referrer',
   });
-  if (!response.ok) throw new Error(response.status === 401 ? 'API Key 无效，请检查后再试。' : '暂时无法连接，请稍后再试。');
-  const models = await response.json();
-  if (!models.data?.some(model => model.id === 'human-telegram')) throw new Error('接口未返回可用模型。');
+  if (!response.ok) throw new Error('暂时无法连接，请稍后再试。');
 }
 
 function connection(online) {
@@ -215,7 +215,6 @@ function connection(online) {
 
 async function send(retry = false) {
   if (activeRequest) return;
-  if (!key()) { openSettings(); return; }
   const chat = current();
   const prompt = $('prompt').value.trim();
   if (!retry && !prompt) return;
@@ -233,7 +232,7 @@ async function send(retry = false) {
   const timer = setTimeout(() => controller.abort('timeout'), 660000);
   save(); render();
   try {
-    answer.content = await complete(messages, key(), controller.signal, text => {
+    answer.content = await complete(messages, controller.signal, text => {
       answer.content = text; delete answer.status; renderMessages();
     });
     delete answer.status;
@@ -267,29 +266,22 @@ if (!current()) createChat();
 
 const theme = storageGet(localStorage, 'kus-chat-theme');
 document.body.classList.toggle('dark', theme ? theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches);
-$('theme').onclick = () => {
+function toggleTheme() {
   const dark = document.body.classList.toggle('dark');
   try { localStorage.setItem('kus-chat-theme', dark ? 'dark' : 'light'); } catch { /* Theme still applies for this visit. */ }
-};
+}
+$('theme').onclick = toggleTheme;
+$('settings-theme').onclick = toggleTheme;
 $('new-chat').onclick = newChat;
+$('new-inline').onclick = newChat;
 $('settings-open').onclick = openSettings;
+$('profile-open').onclick = openSettings;
 $('settings-close').onclick = () => $('settings').close();
-$('settings-form').onsubmit = async event => {
-  event.preventDefault();
-  const apiKey = $('api-key').value.trim();
-  if (!apiKey) { $('settings-status').textContent = '请先填入 API Key。'; return; }
-  const button = event.submitter;
-  button.disabled = true;
-  $('settings-status').textContent = '正在验证连接…';
-  try {
-    await checkConnection(apiKey, AbortSignal.timeout(15000));
-    localStorage.removeItem(KEY_NAME); sessionStorage.removeItem(KEY_NAME);
-    ($('remember-key').checked ? localStorage : sessionStorage).setItem(KEY_NAME, apiKey);
-    connection(true); $('settings').close(); toast('已连接，可以开始聊天了');
-  } catch (error) {
-    $('settings-status').textContent = error.name === 'TimeoutError' ? '连接超时，请稍后重试。' : error.message;
-    connection(false);
-  } finally { button.disabled = false; }
+$('search-toggle').onclick = () => { $('search').hidden = !$('search').hidden; if (!$('search').hidden) $('search').focus(); };
+$('search').oninput = history;
+$('sidebar-close').onclick = () => {
+  if (matchMedia('(max-width:650px)').matches) closeSidebar();
+  else $('sidebar').classList.add('collapsed');
 };
 $('composer').onsubmit = event => { event.preventDefault(); send(); };
 $('prompt').oninput = () => { current().draft = $('prompt').value; save(); resize(); };
@@ -305,6 +297,7 @@ $('clear-chat').onclick = () => {
   current().messages = []; current().title = '新对话'; save(); render();
 };
 $('menu').onclick = () => {
+  if (!matchMedia('(max-width:650px)').matches) { $('sidebar').classList.remove('collapsed'); return; }
   const open = $('sidebar').classList.toggle('open');
   $('shade').hidden = !open; $('menu').setAttribute('aria-expanded', String(open));
 };
@@ -322,4 +315,4 @@ document.querySelectorAll('[data-prompt]').forEach(button => {
   };
 });
 render();
-if (key()) checkConnection(key(), AbortSignal.timeout(15000)).then(() => connection(true)).catch(() => connection(false));
+checkConnection(AbortSignal.timeout(15000)).then(() => connection(true)).catch(() => connection(false));

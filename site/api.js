@@ -1,4 +1,4 @@
-export const BASE_URL = 'https://chat.kus.ai/v1';
+export const BASE_URL = 'https://chat.kus.ai';
 
 export async function* readEvents(stream) {
   const reader = stream.getReader();
@@ -26,19 +26,19 @@ export async function* readEvents(stream) {
   }
 }
 
-export async function complete(messages, key, signal, onContent) {
+export async function complete(messages, signal, onContent) {
   const payload = JSON.stringify({ model: 'human-telegram', messages, stream: true });
   if (new TextEncoder().encode(payload).length > 65536) {
     throw new Error('这段对话太长了，请开启新对话。');
   }
   if (messages.length > 200) throw new Error('这段对话已达到消息上限，请开启新对话。');
-  const response = await fetch(`${BASE_URL}/chat/completions`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+  const response = await fetch(`${BASE_URL}/web/chat/completions`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: payload, signal, credentials: 'omit', referrerPolicy: 'no-referrer',
   });
   if (!response.ok) {
     const errors = {
-      401: 'API Key 无效，请在设置中检查。',
+      403: '请从 kus.ai/chat/ 打开聊天页面。',
       429: '现在有点忙，请稍后再试。',
       503: '暂时无法连接，请稍后再试。',
       504: '等待超时了，可以再试一次。',
